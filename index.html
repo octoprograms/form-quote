@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pack Size Confirmation – Kaizen Prompt Suppliers</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{--navy:#1F4E78;--ink:#1d2430;--muted:#5d6675;--line:#d9dee6;--bg:#f4f6f9;--ok:#1e7b46;--err:#b42318}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.45}
+  header{background:var(--navy);color:#fff;padding:22px 20px}
+  header .wrap{max-width:980px;margin:0 auto}
+  header h1{margin:0;font-size:1.35rem;letter-spacing:.02em}
+  header p{margin:4px 0 0;opacity:.85;font-size:.9rem}
+  main{max-width:980px;margin:0 auto;padding:20px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+  h2{font-size:1.05rem;margin:0 0 6px}
+  .lead{margin:0;color:var(--muted)}
+  .item{display:grid;grid-template-columns:28px 1fr 170px 110px 1fr;gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+  .item:first-of-type{border-top:0}
+  .head{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding-bottom:6px}
+  .no{color:var(--muted);font-weight:600}
+  .name{font-weight:600}
+  .meta{font-size:.82rem;color:var(--muted);font-weight:400}
+  label.sr{position:absolute;left:-9999px}
+  select,input[type=text],input[type=number],input[type=tel]{width:100%;padding:9px 10px;border:1px solid #b9c1cd;border-radius:7px;font:inherit;background:#fff}
+  select:focus,input:focus{outline:2px solid #8bb3dd;border-color:var(--navy)}
+  .sign{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .sign label{font-size:.85rem;font-weight:600;display:block;margin-bottom:4px}
+  button{background:var(--navy);color:#fff;border:0;border-radius:8px;padding:12px 22px;font:inherit;font-weight:600;cursor:pointer}
+  button[disabled]{opacity:.6;cursor:wait}
+  .msg{margin-top:12px;font-weight:600}
+  .msg.ok{color:var(--ok)} .msg.err{color:var(--err)}
+  .done{text-align:center;padding:40px 20px}
+  .done h2{color:var(--ok);font-size:1.3rem}
+  footer{text-align:center;color:var(--muted);font-size:.8rem;padding:10px 0 30px}
+  @media (max-width:760px){
+    .item{grid-template-columns:28px 1fr;grid-template-areas:"no name" ". unit" ". qty" ". note"}
+    .item.head{display:none}
+    .item .no{grid-area:no}.item .name{grid-area:name}.item .unit{grid-area:unit}.item .qty{grid-area:qty}.item .note{grid-area:note}
+    label.sr{position:static;font-size:.78rem;color:var(--muted);display:block;margin-bottom:2px}
+    .sign{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>KAIZEN PROMPT SUPPLIERS</h1>
+  <p>Pack Size Confirmation Request · Re: Double Whiteline Plus Ltd – New Price List May 2026 (22 May 2026)</p>
+</div></header>
+<main>
+  <form id="f" novalidate>
+    <div class="card">
+      <h2>To: Double Whiteline Plus Ltd</h2>
+      <p class="lead">Your price list doesn't state the pack size for the items below. For each one, please choose what the listed price covers and enter how many pieces are in it. Leave a row blank if you're not sure.</p>
+    </div>
+    <div class="card" id="items">
+      <div class="item head"><span>#</span><span>Item (as on your list)</span><span>Price is for</span><span>Pieces in it</span><span>Comments</span></div>
+    </div>
+    <div class="card">
+      <h2>Confirmed by</h2>
+      <div class="sign">
+        <div><label for="who">Your name *</label><input type="text" id="who" maxlength="120" autocomplete="name" required></div>
+        <div><label for="contact">Phone or email</label><input type="text" id="contact" maxlength="160" autocomplete="tel"></div>
+      </div>
+      <div style="margin-top:16px"><button type="submit" id="btn">Submit answers</button></div>
+      <div class="msg" id="msg" role="status" aria-live="polite"></div>
+    </div>
+  </form>
+  <div class="card done" id="done" hidden>
+    <h2>Thank you — your answers have been sent.</h2>
+    <p class="lead">Kaizen Prompt Suppliers has received your pack-size confirmation.</p>
+  </div>
+  <footer>Kaizen Prompt Suppliers · Juja, Kenya</footer>
+</main>
+<script>
+const SUPABASE_URL = "https://hnavjlqkacuqnaxkseqw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_aIJ4pDQg7nfC_djVSX3NDg_ozIzxKuN"; // public, insert-only (RLS)
+const ITEMS = [
+  ["C4 BROWN ENVELOPE",135,"Envelopes: 25 or 50 to a pack?"],
+  ["DL WHITE POCKET",60,"Envelopes: 25 or 50 to a pack?"],
+  ["BIC BLUE / BIC RED / BIC BLACK",350,"Box of 20 or 50 pens?"],
+  ["RECEIPT BK NUMBERED",390,"One book or a pack?"],
+  ["FLIP CHART",320,"Sheets per pad?"],
+  ["GRAPH PAPER KASUKU",450,"Sheets per pack?"],
+  ["KARTASI BOOK COVER A4 SIZE",110,"Covers per pack?"],
+  ["KARTASI BOOK COVER A5 SIZE",80,"Covers per pack?"],
+  ["BOOK COVER A4 ADHESIVE",180,"Covers per pack?"],
+  ["BOOK COVER A5 ADHESIVE",140,"Covers per pack?"],
+  ["BRUSHES WATER COLOUR",140,"Brushes per pack?"],
+  ["MAP PINS",550,"Pins per box?"],
+  ["THUMB TUCKS",150,"Tacks per box?"],
+  ["TREASURY TAGS",220,"Tags per pack?"],
+  ["500H CARBON PELIKAN",700,"Sheets per box?"],
+  ["FILE FASTENER PLASTIC",105,"Fasteners per box?"]
+];
+const UNITS = ["","Piece","Pack","Box","Dozen","Carton","Ream","Pad","Roll","Set","Other"];
+const box = document.getElementById("items");
+ITEMS.forEach(([name,price,q],i)=>{
+  const n=i+1, row=document.createElement("div"); row.className="item";
+  row.innerHTML = `<span class="no">${n}</span>
+    <span class="name">${name}<br><span class="meta">Listed KSh ${price.toLocaleString()} · ${q}</span></span>
+    <span class="unit"><label class="sr" for="u${n}">Price is for</label><select id="u${n}">${UNITS.map(u=>`<option value="${u}">${u||"— choose —"}</option>`).join("")}</select></span>
+    <span class="qty"><label class="sr" for="q${n}">Pieces in it</label><input type="number" id="q${n}" min="1" max="100000" inputmode="numeric" placeholder="e.g. 50"></span>
+    <span class="note"><label class="sr" for="c${n}">Comments</label><input type="text" id="c${n}" maxlength="200" placeholder="Optional"></span>`;
+  box.appendChild(row);
+});
+const f=document.getElementById("f"), msg=document.getElementById("msg"), btn=document.getElementById("btn");
+f.addEventListener("submit", async e=>{
+  e.preventDefault(); msg.className="msg"; msg.textContent="";
+  const who=document.getElementById("who").value.trim();
+  if(!who){msg.className="msg err";msg.textContent="Please enter your name.";document.getElementById("who").focus();return;}
+  const answers=ITEMS.map(([name,price],i)=>{const n=i+1;
+    const q=document.getElementById("q"+n).value;
+    return {no:n,item:name,listed_price:price,price_is_for:document.getElementById("u"+n).value||null,
+            pieces:q?Number(q):null,comments:document.getElementById("c"+n).value.trim()||null};});
+  if(!answers.some(a=>a.price_is_for||a.pieces)){msg.className="msg err";msg.textContent="Please answer at least one item.";return;}
+  btn.disabled=true; btn.textContent="Sending…";
+  try{
+    const r=await fetch(SUPABASE_URL+"/rest/v1/supplier_pack_confirmations",{method:"POST",
+      headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json","Prefer":"return=minimal"},
+      body:JSON.stringify({confirmed_by:who,contact:document.getElementById("contact").value.trim()||null,answers})});
+    if(!r.ok) throw new Error(await r.text());
+    f.hidden=true; document.getElementById("done").hidden=false; window.scrollTo(0,0);
+  }catch(err){
+    msg.className="msg err"; msg.textContent="Sorry, that didn't send. Please check your connection and try again.";
+    btn.disabled=false; btn.textContent="Submit answers"; console.error(err);
+  }
+});
+</script>
+</body>
+</html>
