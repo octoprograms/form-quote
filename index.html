@@ -50,7 +50,17 @@
   <p>Pack Size Confirmation Request · Re: Double Whiteline Plus Ltd – New Price List May 2026 (22 May 2026)</p>
 </div></header>
 <main>
-  <form id="f" novalidate>
+  <div class="card" id="gate">
+    <h2>Enter access code</h2>
+    <p class="lead">This form is for Double Whiteline Plus Ltd only. Enter the access code Kaizen Prompt Suppliers sent you.</p>
+    <form id="g" style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap" novalidate>
+      <label class="sr" for="code" style="position:absolute;left:-9999px">Access code</label>
+      <input type="text" id="code" maxlength="40" autocomplete="off" autocapitalize="characters" placeholder="e.g. DW-XXXX-XXXX" style="max-width:260px;text-transform:uppercase">
+      <button type="submit" id="gbtn">Continue</button>
+    </form>
+    <div class="msg" id="gmsg" role="status" aria-live="polite"></div>
+  </div>
+  <form id="f" novalidate hidden>
     <div class="card">
       <h2>To: Double Whiteline Plus Ltd</h2>
       <p class="lead">Your price list doesn't state the pack size for the items below. For each one, please choose what the listed price covers and enter how many pieces are in it. Leave a row blank if you're not sure.</p>
@@ -76,7 +86,7 @@
 </main>
 <script>
 const SUPABASE_URL = "https://hnavjlqkacuqnaxkseqw.supabase.co";
-const SUPABASE_KEY = "sb_publishable_aIJ4pDQg7nfC_djVSX3NDg_ozIzxKuN"; // public, insert-only (RLS)
+const SUPABASE_KEY = "sb_publishable_aIJ4pDQg7nfC_djVSX3NDg_ozIzxKuN"; // public key; submissions only accepted with a valid access code (checked in the database)
 const ITEMS = [
   ["C4 BROWN ENVELOPE",135,"Envelopes: 25 or 50 to a pack?"],
   ["DL WHITE POCKET",60,"Envelopes: 25 or 50 to a pack?"],
@@ -107,6 +117,26 @@ ITEMS.forEach(([name,price,q],i)=>{
   box.appendChild(row);
 });
 const f=document.getElementById("f"), msg=document.getElementById("msg"), btn=document.getElementById("btn");
+let CODE=null;
+async function rpc(fn,args){
+  const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/"+fn,{method:"POST",
+    headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify(args)});
+  const t=await r.text(); if(!r.ok){let m=t;try{m=JSON.parse(t).message||t}catch(_){} const e=new Error(m); e.status=r.status; throw e;}
+  return t?JSON.parse(t):null;
+}
+const g=document.getElementById("g"), gmsg=document.getElementById("gmsg"), gbtn=document.getElementById("gbtn");
+g.addEventListener("submit", async e=>{
+  e.preventDefault(); gmsg.className="msg"; gmsg.textContent="";
+  const c=document.getElementById("code").value.trim().toUpperCase();
+  if(!c){gmsg.className="msg err";gmsg.textContent="Please enter the access code.";return;}
+  gbtn.disabled=true; gbtn.textContent="Checking…";
+  try{
+    const ok=await rpc("check_pack_form_code",{p_code:c});
+    if(ok){CODE=c; document.getElementById("gate").hidden=true; f.hidden=false; window.scrollTo(0,0);}
+    else{gmsg.className="msg err";gmsg.textContent="That code isn't right. Please check it and try again.";}
+  }catch(err){gmsg.className="msg err";gmsg.textContent=/Too many/.test(err.message)?"Too many wrong codes. Please try again in an hour.":"Couldn't check the code. Please check your connection and try again.";}
+  gbtn.disabled=false; gbtn.textContent="Continue";
+});
 f.addEventListener("submit", async e=>{
   e.preventDefault(); msg.className="msg"; msg.textContent="";
   const who=document.getElementById("who").value.trim();
@@ -118,10 +148,7 @@ f.addEventListener("submit", async e=>{
   if(!answers.some(a=>a.price_is_for||a.pieces)){msg.className="msg err";msg.textContent="Please answer at least one item.";return;}
   btn.disabled=true; btn.textContent="Sending…";
   try{
-    const r=await fetch(SUPABASE_URL+"/rest/v1/supplier_pack_confirmations",{method:"POST",
-      headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json","Prefer":"return=minimal"},
-      body:JSON.stringify({confirmed_by:who,contact:document.getElementById("contact").value.trim()||null,answers})});
-    if(!r.ok) throw new Error(await r.text());
+    await rpc("submit_pack_confirmation",{p_code:CODE,p_confirmed_by:who,p_contact:document.getElementById("contact").value.trim()||null,p_answers:answers});
     f.hidden=true; document.getElementById("done").hidden=false; window.scrollTo(0,0);
   }catch(err){
     msg.className="msg err"; msg.textContent="Sorry, that didn't send. Please check your connection and try again.";
